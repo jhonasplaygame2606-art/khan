@@ -3,7 +3,7 @@
 // @namespace   jhonasplaygame2606-art
 // @match       *://*.khanacademy.org/*
 // @grant       none
-// @version     3.1
+// @version     3.2
 // @author      jhonasplaygame2606-art
 // @icon        https://cdn.kastatic.org/images/favicon.ico
 // @description Bypass de UI + Auto-complete de exercícios
@@ -20,13 +20,17 @@
   console.error = (...a) => _error("[KB]", ...a);
   window.debug = () => {};
 
-  // ---------- 1. O CÓDIGO CENTRAL (Forçar conclusão) ----------
+  // ---------- 1. O CÓDIGO CENTRAL (Forçar conclusão / Resposta Correta) ----------
   const og_stringify = JSON.stringify;
   JSON.stringify = (obj) => {
     try {
+      // Verifica se é um envio de resposta de exercício
       if (obj && obj.operationName === "attemptProblem") {
         if (obj.variables && obj.variables.input) {
+          // Força a conclusão e o acerto
           obj.variables.input.completed = true;
+          // Alguns sistemas do Khan exigem "correct: true" ou "status: correct"
+          if (obj.variables.input.status) obj.variables.input.status = "correct"; 
         }
       }
     } catch (e) {
@@ -56,7 +60,7 @@
   }
   const eventBus = new EventEmitter();
 
-  // ---------- Notificações (Nativo, sem Toastify) ----------
+  // ---------- Notificações ----------
   function notify(msg, time = 4000) {
     const el = document.createElement("div");
     el.textContent = msg;
@@ -82,7 +86,7 @@
     }, time);
   }
 
-  // ---------- Logo Spoof (Nativo, sem fonte externa) ----------
+  // ---------- Logo Spoof ----------
   function applyLogoSpoof() {
     if (!document.head) return;
 
@@ -110,27 +114,6 @@
     svg.dataset.kbSpoofed = "true";
   }
 
-  // ---------- Auto-click ----------
-  function clickButtonWithText(text) {
-    const allButtons = document.querySelectorAll("button");
-    for (const button of allButtons) {
-      const direct = button.textContent?.trim();
-      if (direct === text) {
-        button.click();
-        notify(`🚀 Botão "${text}" clicado!`, 1500);
-        return true;
-      }
-      for (const span of button.querySelectorAll("span")) {
-        if (span.textContent?.trim() === text) {
-          button.click();
-          notify(`🚀 Botão "${text}" clicado!`, 1500);
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   // ---------- Observer com debounce ----------
   function startObserver() {
     if (!document.body) return setTimeout(startObserver, 50);
@@ -156,5 +139,5 @@
     startObserver();
   }
 
-  window.KhanBypass = { notify, clickButtonWithText, eventBus };
+  window.KhanBypass = { notify, eventBus };
 })();
