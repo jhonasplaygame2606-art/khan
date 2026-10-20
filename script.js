@@ -1,56 +1,57 @@
 // ==UserScript==
-// @name         Khan Hackademy
-// @namespace    https://thetridentguy.com
-// @version      1.0
-// @description  Força a conclusão de exercícios no Khan Academy.
-// @author       TheTridentGuy
-// @match        *://*.khanacademy.org/*
-// @grant        none
-// @run-at       document-end
+// @name        Khan Hackademy
+// @namespace   https://thetridentguy.com
+// @version     1.0
+// @description Força a conclusão de exercícios no Khan Academy.
+// @author      TheTridentGuy (adaptado)
+// @match       *://*.khanacademy.org/*
+// @grant       none
+// @run-at      document-end
 // ==/UserScript==
 
-(function() {
-    'use strict';
-
+(() => {
+    const fetch_lag = 500;
+    const exec_lag = 500;
     const og_stringify = JSON.stringify;
+    const $ = (...args) => { return document.querySelector(...args) };
 
     JSON.stringify = (obj) => {
-        if (!obj) {
-            return og_stringify(obj);
-        }
+        if (!obj) { return og_stringify(obj); }
 
         if (obj.operationName == "attemptProblem") {
-            console.log("[Khan Hackademy] Interceptando tentativa...");
+            console.log("[KH] Interceptando tentativa...");
+            console.log("[KH] Dados capturados:", obj);
 
-            if (obj.variables && obj.variables.input) {
-                // A MÁGICA: Força a conclusão da tentativa
-                // O script original verifica o attemptNumber para tentar avançar
-                if (obj.variables.input.attemptNumber == 1) {
-                    console.log("[Khan Hackademy] Forçando resposta correta...");
-                    // Força o status para correto. Alguns servidores esperam 'completed' ou 'status'.
-                    obj.variables.input.completed = true;
-                    // Tenta garantir que o status seja 'correct'
-                    if (obj.variables.input.status) {
-                        obj.variables.input.status = "correct";
-                    }
-                }
+            // Força a conclusão
+            obj.variables.input.completed = true;
+            console.log("[KH] Resposta forçada para CORRETA.");
+
+            // Se for a primeira tentativa, tenta avançar para a próxima questão
+            if (obj.variables.input.attemptNumber == 1) {
+                setTimeout(() => {
+                    console.log("[KH] Tentando avançar para a próxima questão...");
+                    const skipBtn = $("[data-testid='exercise-skip-button']");
+                    const nextBtn = $("[data-testid='exercise-next-question']");
+                    
+                    if (skipBtn) skipBtn.click();
+                    if (nextBtn) nextBtn.click();
+                }, exec_lag);
             }
         }
 
         return og_stringify(obj);
     };
 
-    // Pequena alteração visual (opcional, mas ajuda a saber que rodou)
+    // Muda o logo (visual) para saber que rodou
     setInterval(() => {
         try {
-            let header = document.querySelector("[data-testid='header-logo']");
-            if (header && !header.dataset.hacked) {
-                header.innerHTML = "<span style='font-size: x-large; font-weight: bold; color: #00ff88;'>HACKED</span>";
-                header.dataset.hacked = "true";
+            let header = $("[data-testid='header-logo']");
+            if (header) {
+                header.innerHTML = "<span style='font-size: x-large; font-weight: bold;'>Khan Hackademy</span>";
             }
         } catch (e) {
-            // Ignora erros se o header não existir
+            // Ignora se o header não existir
         }
-    }, 1000);
+    }, 500);
 
 })();
