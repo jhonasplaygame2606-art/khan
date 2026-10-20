@@ -1,57 +1,64 @@
 // ==UserScript==
-// @name        Khan Hackademy
-// @namespace   https://thetridentguy.com
-// @version     1.0
-// @description Força a conclusão de exercícios no Khan Academy.
-// @author      TheTridentGuy (adaptado)
+// @name        Khan AutoClick
+// @namespace   jhonasplaygame2606-art
 // @match       *://*.khanacademy.org/*
 // @grant       none
-// @run-at      document-end
+// @version     1.0
+// @description Clica em Verificar e Próxima automaticamente com delay seguro
+// @run-at      document-idle
 // ==/UserScript==
 
-(() => {
-    const fetch_lag = 500;
-    const exec_lag = 500;
-    const og_stringify = JSON.stringify;
-    const $ = (...args) => { return document.querySelector(...args) };
+(function () {
+  "use strict";
+  console.log("[KB AutoClick] Script de auto-clique carregado.");
 
-    JSON.stringify = (obj) => {
-        if (!obj) { return og_stringify(obj); }
+  // Tempo de espera entre os cliques (em milissegundos). 
+  // 4000 = 4 segundos. Aumente se o Khan for muito rápido.
+  const DELAY = 4500; 
 
-        if (obj.operationName == "attemptProblem") {
-            console.log("[KH] Interceptando tentativa...");
-            console.log("[KH] Dados capturados:", obj);
+  let isProcessing = false;
 
-            // Força a conclusão
-            obj.variables.input.completed = true;
-            console.log("[KH] Resposta forçada para CORRETA.");
+  function findAndClick(texts, selector = 'button') {
+    const buttons = document.querySelectorAll(selector);
+    for (const btn of buttons) {
+      // Verifica se o botão está visível e não desativado
+      if (btn.offsetParent === null || btn.disabled) continue;
 
-            // Se for a primeira tentativa, tenta avançar para a próxima questão
-            if (obj.variables.input.attemptNumber == 1) {
-                setTimeout(() => {
-                    console.log("[KH] Tentando avançar para a próxima questão...");
-                    const skipBtn = $("[data-testid='exercise-skip-button']");
-                    const nextBtn = $("[data-testid='exercise-next-question']");
-                    
-                    if (skipBtn) skipBtn.click();
-                    if (nextBtn) nextBtn.click();
-                }, exec_lag);
-            }
+      const content = btn.textContent.trim().toLowerCase();
+      for (const t of texts) {
+        if (content.includes(t.toLowerCase())) {
+          console.log(`[KB AutoClick] Clicando no botão: "${btn.textContent.trim()}"`);
+          btn.click();
+          return true;
         }
+      }
+    }
+    return false;
+  }
 
-        return og_stringify(obj);
-    };
+  // O "Cérebro" do script: observa a tela o tempo todo
+  setInterval(() => {
+    if (isProcessing) return;
 
-    // Muda o logo (visual) para saber que rodou
-    setInterval(() => {
-        try {
-            let header = $("[data-testid='header-logo']");
-            if (header) {
-                header.innerHTML = "<span style='font-size: x-large; font-weight: bold;'>Khan Hackademy</span>";
-            }
-        } catch (e) {
-            // Ignora se o header não existir
-        }
-    }, 500);
+    // Lista de botões que ele deve clicar
+    const verifyButtons = ["verificar", "check", "enviar resposta", "submit"];
+    const nextButtons = ["próxima", "next", "continuar", "continue", "pular", "skip"];
+
+    // Se encontrar o botão de Verificar, clica nele
+    if (findAndClick(verifyButtons)) {
+      isProcessing = true;
+      // Bloqueia o script por 4.5 segundos para não clicar duas vezes
+      setTimeout(() => { isProcessing = false; }, DELAY);
+      return;
+    }
+
+    // Se não achou Verificar, tenta clicar no Próxima (que aparece depois do resultado)
+    if (findAndClick(nextButtons)) {
+      isProcessing = true;
+      setTimeout(() => { isProcessing = false; }, DELAY);
+      return;
+    }
+
+  }, 1500); // Verifica a tela a cada 1.5 segundos
 
 })();
