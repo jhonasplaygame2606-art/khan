@@ -3,7 +3,7 @@
 // @namespace   jhonasplaygame2606-art
 // @match       *://*.khanacademy.org/*
 // @grant       none
-// @version     3.0
+// @version     3.1
 // @author      jhonasplaygame2606-art
 // @icon        https://cdn.kastatic.org/images/favicon.ico
 // @description Bypass de UI + Auto-complete de exercícios
@@ -56,30 +56,8 @@
   }
   const eventBus = new EventEmitter();
 
-  // ---------- Helpers ----------
-  const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-
-  // ---------- Notificações (Toastify com fallback) ----------
-  function notify(msg, time = 4000, gravity = "bottom") {
-    if (typeof Toastify === "function") {
-      try {
-        Toastify({
-          text: msg,
-          duration: time,
-          gravity,
-          position: "center",
-          stopOnFocus: true,
-          style: {
-            background: "linear-gradient(135deg, #72ff72, #00ff88)",
-            color: "#000",
-            fontWeight: "600",
-            borderRadius: "8px",
-            boxShadow: "0 4px 20px rgba(114, 255, 114, 0.3)",
-          },
-        }).showToast();
-        return;
-      } catch (_) { /* cai no fallback */ }
-    }
+  // ---------- Notificações (Nativo, sem Toastify) ----------
+  function notify(msg, time = 4000) {
     const el = document.createElement("div");
     el.textContent = msg;
     Object.assign(el.style, {
@@ -87,7 +65,7 @@
       left: "50%",
       bottom: "24px",
       transform: "translateX(-50%)",
-      background: "#00ff88",
+      background: "linear-gradient(135deg, #72ff72, #00ff88)",
       color: "#000",
       padding: "10px 16px",
       borderRadius: "8px",
@@ -95,27 +73,16 @@
       fontFamily: "system-ui, sans-serif",
       zIndex: 999999,
       boxShadow: "0 4px 20px rgba(0,0,0,.2)",
+      transition: "opacity 0.3s ease"
     });
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), time);
+    setTimeout(() => {
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 300);
+    }, time);
   }
 
-  function ensureToastify() {
-    if (typeof Toastify === "function" || document.getElementById("kb-toastify")) return;
-    const link = document.createElement("link");
-    link.id = "kb-toastify-css";
-    link.rel = "stylesheet";
-    link.href = "https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css";
-    document.head?.appendChild(link);
-
-    const s = document.createElement("script");
-    s.id = "kb-toastify";
-    s.src = "https://cdn.jsdelivr.net/npm/toastify-js";
-    s.async = true;
-    document.head?.appendChild(s);
-  }
-
-  // ---------- Logo Spoof ----------
+  // ---------- Logo Spoof (Nativo, sem fonte externa) ----------
   function applyLogoSpoof() {
     if (!document.head) return;
 
@@ -134,8 +101,7 @@
     newText.textContent = "@MZZVXM";
     newText.setAttribute("x", "33");
     newText.setAttribute("y", "20");
-    // Usando Arial para não depender de arquivos externos no novo repositório
-    newText.setAttribute("font-family", 'Arial, sans-serif'); 
+    newText.setAttribute("font-family", "Arial, sans-serif"); 
     newText.setAttribute("font-weight", "bold");
     newText.setAttribute("font-size", "20px");
     newText.setAttribute("fill", originalColor);
@@ -180,7 +146,6 @@
   }
 
   eventBus.on("domChanged", () => {
-    ensureToastify();
     applyLogoSpoof();
   });
 
